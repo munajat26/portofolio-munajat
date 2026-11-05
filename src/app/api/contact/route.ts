@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabaseClient';
+import { supabase, isSupabaseConfigured } from '@/lib/supabaseClient';
 
 export async function POST(request: Request) {
   try {
@@ -7,6 +7,10 @@ export async function POST(request: Request) {
 
     if (!name || !email || !message) {
       return NextResponse.json({ error: 'Data tidak lengkap.' }, { status: 400 });
+    }
+
+    if (!isSupabaseConfigured) {
+      return NextResponse.json({ error: 'Layanan pesan belum dikonfigurasi.' }, { status: 503 });
     }
 
     const { error } = await supabase

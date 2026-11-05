@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence, useReducedMotion, useMotionValue, useSpring, useTransform, useInView } from 'framer-motion';
 import { Github, ArrowRight, ArrowUpRight, Sun, Moon, Database, Code2, Layers, Terminal, Send, CheckCircle2, AlertCircle } from 'lucide-react';
-import { supabase } from '@/lib/supabaseClient';
+import { supabase, isSupabaseConfigured } from '@/lib/supabaseClient';
 import { Project } from '@/types';
 
 // ====== UBAH DATA PRIBADI DI SINI ======
@@ -427,6 +427,7 @@ export default function Home() {
   useEffect(() => {
     (async () => {
       try {
+        if (!isSupabaseConfigured) { setProjects(MOCK_PROJECTS); return; }
         const { data, error } = await supabase.from('projects').select('*').order('created_at', { ascending: false });
         setProjects(error || !data || data.length === 0 ? MOCK_PROJECTS : data);
       } catch {
