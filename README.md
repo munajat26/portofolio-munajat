@@ -54,3 +54,4 @@ Pastikan `package-lock.json` ikut ter-commit supaya versi paket di Vercel sama d
 4. Klik **Deploy**. Setiap `git push` ke branch `main` akan otomatis di-deploy ulang.
 
 Jika mengubah environment variable setelah deploy, lakukan **Redeploy** agar nilainya terpakai.
+Deployment managed through GitHub and Vercel.
