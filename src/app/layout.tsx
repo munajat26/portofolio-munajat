@@ -7,8 +7,14 @@ const display = Anton({ subsets: ["latin"], weight: "400", variable: "--font-dis
 const script = Mrs_Saint_Delafield({ subsets: ["latin"], weight: "400", variable: "--font-script", display: "swap" });
 
 export const metadata: Metadata = {
-  title: "Munajat - Web Developer",
-  description: "Portofolio profesional menampilkan proyek web dengan variasi front-end dan back-end.",
+  title: "Mun's Project | Jasa Pembuatan Website & Aplikasi",
+  description: "Mun's Project membangun website dan aplikasi untuk sekolah, kampus, inventory & kasir, keuangan, HRD, dan kebutuhan bisnis lainnya.",
+  openGraph: {
+    title: "Mun's Project | Jasa Pembuatan Website & Aplikasi",
+    description: "Kami membangun website dan aplikasi sesuai kebutuhan: sistem sekolah, kampus, inventory & kasir, keuangan, dan HRD.",
+    type: "website",
+    locale: "id_ID",
+  },
 };
 
 export const viewport: Viewport = {

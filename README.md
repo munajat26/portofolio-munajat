@@ -1,6 +1,6 @@
-# Next.js & Supabase Portfolio
+# Mun's Project - Website Promo
 
-Proyek Web Portofolio modern, elegan, dan profesional berbasis **Next.js (App Router)** dan **Supabase**.
+Website promo **Mun's Project**: tim yang mengerjakan website dan aplikasi untuk klien (sekolah, kampus, inventory & kasir, keuangan, HRD, dan lainnya). Dibangun dengan **Next.js (App Router)** dan **Supabase**.
 
 ## 🚀 Cara Menjalankan di Local (VS Code)
 
@@ -25,9 +25,9 @@ Proyek Web Portofolio modern, elegan, dan profesional berbasis **Next.js (App Ro
 
 ## 🖼️ Aset
 
-- Foto profil: simpan sebagai `public/profile.png` (PNG transparan paling bagus).
 - Thumbnail proyek: simpan di `public/projects/`, lalu isi kolom `image_url` di tabel `projects` dengan `/projects/nama-file.png` (atau link gambar dari internet).
-- Edit nama, statistik, dan link sosial di objek `SITE` pada `src/app/page.tsx`.
+- Edit nama brand, statistik, dan nomor WhatsApp di objek `SITE` pada `src/app/page.tsx`.
+- Edit daftar layanan di konstanta `SERVICES`, dan alur kerja di `PROCESS`.
 
 ## 🔐 Environment Variable
 
@@ -38,7 +38,7 @@ Salin `.env.example` menjadi `.env.local` lalu isi nilainya. File `.env.local` s
 ```bash
 git init
 git add .
-git commit -m "Initial commit: portfolio"
+git commit -m "Initial commit: Muns Project"
 git branch -M main
 git remote add origin https://github.com/USERNAME/NAMA-REPO.git
 git push -u origin main
