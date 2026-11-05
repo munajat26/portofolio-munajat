@@ -1,0 +1,150 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ===== Tema: gelap (default) & terang ===== */
+:root,
+[data-theme="dark"] {
+  /* abu-biru gelap bertingkat (bukan hitam pekat) */
+  --ink: 19 20 26;
+  --panel: 31 33 42;
+  --card: 27 29 37;
+  --fg: 236 238 244;
+  --muted: 164 168 183;
+  --crimson: 232 48 66;
+  --line: rgba(255, 255, 255, 0.1);
+  --glass: rgba(36, 38, 49, 0.62);
+  --glass-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 10px 40px -12px rgba(0, 0, 0, 0.55);
+  --card-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 8px 24px -12px rgba(0, 0, 0, 0.6);
+  --card-shadow-hover: inset 0 1px 0 rgba(255, 255, 255, 0.07), 0 24px 48px -20px rgb(232 48 66 / 0.45);
+  --glow1: rgba(232, 48, 66, 0.22);
+  --glow2: rgba(120, 140, 255, 0.1);
+  --dots: rgba(255, 255, 255, 0.07);
+  --scroll: #3a3d4a;
+  color-scheme: dark;
+}
+
+[data-theme="light"] {
+  /* krem hangat dengan kartu putih: lebih berdimensi, tidak pucat */
+  --ink: 234 231 224;
+  --panel: 255 255 255;
+  --card: 255 255 255;
+  --fg: 18 18 24;
+  --muted: 78 78 92;
+  --crimson: 200 22 40;
+  --line: rgba(18, 18, 24, 0.12);
+  --glass: rgba(255, 255, 255, 0.72);
+  --glass-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 10px 40px -18px rgba(20, 20, 30, 0.3);
+  --card-shadow: 0 1px 2px rgba(20, 20, 30, 0.06), 0 12px 28px -14px rgba(20, 20, 30, 0.22);
+  --card-shadow-hover: 0 1px 2px rgba(20, 20, 30, 0.06), 0 24px 44px -18px rgb(200 22 40 / 0.4);
+  --glow1: rgba(200, 22, 40, 0.16);
+  --glow2: rgba(20, 20, 30, 0.06);
+  --dots: rgba(18, 18, 24, 0.09);
+  --scroll: #bdb9b0;
+  color-scheme: light;
+}
+
+/* Skala tipografi & layout mengikuti layar: 16px pada 1920x1080, ~21px pada 2560x1440 */
+html {
+  font-size: clamp(14px, min(0.833vw, 1.48vh), 44px);
+  background-color: rgb(var(--ink));
+  height: 100%;
+  overflow: hidden;
+}
+@media (max-width: 767px) { html { font-size: 16px; } }
+@media (max-height: 500px) { html { font-size: 10px; } }
+
+body {
+  height: 100%;
+  overflow: hidden;
+  color: rgb(var(--fg));
+  background-color: rgb(var(--ink));
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior: none;
+}
+
+:focus-visible { outline: 2px solid rgb(var(--crimson)); outline-offset: 3px; border-radius: 6px; }
+a, button { -webkit-tap-highlight-color: transparent; }
+
+/* ===== Komponen reusable ===== */
+@layer components {
+  .card {
+    background-color: rgb(var(--card));
+    border: 1px solid var(--line);
+    border-radius: 1rem;
+    box-shadow: var(--card-shadow);
+  }
+  .card-hover {
+    transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.5s ease, border-color 0.3s ease;
+  }
+  .card-hover:hover {
+    transform: translateY(-4px);
+    border-color: rgb(var(--crimson) / 0.5);
+    box-shadow: var(--card-shadow-hover);
+  }
+  .glass-card {
+    background: var(--glass);
+    border: 1px solid var(--line);
+    border-radius: 1rem;
+    box-shadow: var(--glass-shadow);
+    -webkit-backdrop-filter: blur(16px) saturate(1.6);
+    backdrop-filter: blur(16px) saturate(1.6);
+  }
+  .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 9999px;
+    font-weight: 600;
+    color: #fff;
+    background: linear-gradient(135deg, rgb(var(--crimson)), color-mix(in srgb, rgb(var(--crimson)) 70%, #000));
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28), 0 12px 28px -10px rgb(var(--crimson) / 0.65);
+    transition: transform 0.3s ease, box-shadow 0.3s ease, filter 0.3s ease;
+  }
+  .btn-primary:hover {
+    transform: translateY(-2px);
+    filter: brightness(1.1);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 18px 36px -10px rgb(var(--crimson) / 0.75);
+  }
+  .btn-primary:active { transform: scale(0.97); }
+  .btn-ghost {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 9999px;
+    font-weight: 500;
+    color: rgb(var(--fg));
+    border: 1px solid var(--line);
+    background-color: rgb(var(--card) / 0.6);
+    transition: border-color 0.3s ease, color 0.3s ease, transform 0.3s ease;
+  }
+  .btn-ghost:hover { border-color: rgb(var(--crimson)); color: rgb(var(--crimson)); transform: translateY(-2px); }
+  .crimson-panel {
+    background:
+      radial-gradient(120% 90% at 100% 0%, rgb(255 255 255 / 0.22), transparent 55%),
+      linear-gradient(160deg, rgb(var(--crimson)), color-mix(in srgb, rgb(var(--crimson)) 55%, #000));
+    box-shadow: 0 24px 50px -24px rgb(var(--crimson) / 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  }
+}
+
+/* Pola titik halus di latar */
+.bg-dots {
+  background-image: radial-gradient(var(--dots) 1px, transparent 1px);
+  background-size: 22px 22px;
+  -webkit-mask-image: radial-gradient(75% 65% at 50% 0%, #000, transparent 80%);
+  mask-image: radial-gradient(75% 65% at 50% 0%, #000, transparent 80%);
+}
+
+/* Transisi halus saat ganti tema */
+.theme-anim, .theme-anim *, .theme-anim *::before, .theme-anim *::after {
+  transition: background-color 0.45s ease, border-color 0.45s ease, color 0.45s ease, fill 0.45s ease, box-shadow 0.45s ease !important;
+}
+
+::-webkit-scrollbar { width: 10px; }
+::-webkit-scrollbar-track { background: rgb(var(--ink)); }
+::-webkit-scrollbar-thumb { background: var(--scroll); border-radius: 6px; }
+::-webkit-scrollbar-thumb:hover { background: rgb(var(--crimson)); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
