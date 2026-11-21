@@ -36,10 +36,8 @@ export default function SettingsManager() {
       const next: SiteSettings = {
         ...s,
         whatsapp: normalizeWhatsapp(wa),
-        support_url: s.support_url.trim(),
         drive_folder: s.drive_folder.trim(),
       };
-      if (!/^https?:\/\//i.test(next.support_url)) throw new Error('Link Support harus diawali http:// atau https://');
       if (next.drive_folder && !/^https?:\/\//i.test(next.drive_folder)) throw new Error('Link folder Google Drive harus diawali http:// atau https://');
       const { error } = await supabase.from('site_settings').upsert({ id: 1, data: next, updated_at: new Date().toISOString() });
       if (error) throw error;
@@ -84,8 +82,7 @@ export default function SettingsManager() {
         </section>
 
         <section className="card space-y-4 p-5 md:p-6">
-          <h2 className="font-display text-xl uppercase tracking-wide text-fg">Menu Support &amp; Download</h2>
-          <Field label="Link menu Support" hint="Menu Support langsung membuka link ini di tab baru."><input required value={s.support_url} onChange={(e) => setS({ ...s, support_url: e.target.value })} className={inputCls} placeholder="https://..." /></Field>
+          <h2 className="font-display text-xl uppercase tracking-wide text-fg">Halaman Download</h2>
           <Field label="Link folder Google Drive (opsional)" hint="Jika diisi, muncul tombol 'Buka folder Google Drive' di halaman Download."><input value={s.drive_folder} onChange={(e) => setS({ ...s, drive_folder: e.target.value })} className={inputCls} placeholder="https://drive.google.com/drive/folders/..." /></Field>
         </section>
 

@@ -27,10 +27,12 @@ Website promo **Mun's Project**: tim yang mengerjakan website dan aplikasi untuk
 
 Panel admin ada di **`/admin`** (login di `/admin/login`). Dari sini Anda mengelola:
 
-- **File Download**: upload file (maks 50 MB) atau tempel link Google Drive. File tampil di menu *Download* pada situs.
+- **File Download**: buat folder per proyek, lalu upload file (bisa banyak sekaligus, maks 50 MB per file) atau tempel link Google Drive ke folder tersebut. Pengunjung memilih folder proyek dulu di menu *Download*, baru melihat file di dalamnya.
 - **Proyek**: tambah/ubah/hapus karya, termasuk upload thumbnail.
+- **Statistik**: jumlah pengunjung (hari ini, 7/30 hari, total), grafik harian, halaman populer, sumber kunjungan, dan jenis perangkat.
 - **Pesan**: baca, balas, dan hapus pesan dari formulir kontak.
-- **Pengaturan**: nama brand, tagline, WhatsApp, link menu *Support*, folder Google Drive, statistik beranda, banner promo, dan ganti password admin.
+- **Rekening**: kelola daftar rekening bank, e-wallet, dan QRIS yang tampil di halaman **Support** (`/support`).
+- **Pengaturan**: nama brand, tagline, WhatsApp, folder Google Drive, statistik beranda, banner promo, dan ganti password admin.
 
 ### Menyiapkan admin (sekali saja)
 
@@ -44,6 +46,20 @@ Panel admin ada di **`/admin`** (login di `/admin/login`). Dari sini Anda mengel
    ```
 4. Disarankan: **Authentication > Sign In / Providers**, matikan *Allow new users to sign up*.
 5. Buka `/admin/login` dan masuk.
+
+### Statistik pengunjung
+
+Pengunjung dicatat otomatis oleh komponen `VisitTracker` (di `src/app/layout.tsx`) ke tabel `page_views`. Ketentuannya:
+
+- Halaman `/admin` tidak dicatat, dan kunjungan Anda sendiri saat sedang login juga tidak dihitung.
+- *Pengunjung unik* dihitung per browser/perangkat (ID acak di localStorage). Orang yang sama membuka dari HP dan laptop terhitung dua.
+- Pengunjung yang memblokir localStorage atau JavaScript tidak tercatat.
+- Hari dihitung menurut zona waktu WITA (`Asia/Makassar`); ubah konstanta `tz` di fungsi `get_visit_stats` pada `schema.sql` jika perlu.
+- Setelah memperbarui kode, jalankan ulang `schema.sql` agar tabel dan fungsi statistik terbentuk.
+
+### Halaman Support
+
+Menu *Support* membuka halaman `/support` yang menampilkan rekening bank, e-wallet, dan QRIS dengan tombol salin. Isinya diatur dari **Admin Panel > Rekening**. Data awal diisi otomatis oleh `schema.sql` (hanya jika tabel masih kosong). Gambar barcode QRIS diupload dari form rekening berjenis QRIS.
 
 Keamanan ditegakkan di database (Row Level Security): hanya akun yang ada di tabel `admins` yang bisa mengubah data atau mengupload file. Pengunjung hanya bisa membaca konten yang dipublikasikan dan mengirim pesan.
 

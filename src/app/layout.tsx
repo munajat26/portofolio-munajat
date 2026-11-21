@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Plus_Jakarta_Sans, Anton, Mrs_Saint_Delafield } from "next/font/google";
 import "./globals.css";
+import VisitTracker from "./_components/VisitTracker";
 
 const sans = Plus_Jakarta_Sans({ subsets: ["latin"], weight: ["400", "500", "600", "700"], variable: "--font-sans", display: "swap" });
 const display = Anton({ subsets: ["latin"], weight: "400", variable: "--font-display", display: "swap" });
@@ -36,7 +37,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
-      <body className="font-sans selection:bg-crimson selection:text-white">{children}</body>
+      <body className="font-sans selection:bg-crimson selection:text-white"><VisitTracker />
+        {children}
+      </body>
     </html>
   );
 }

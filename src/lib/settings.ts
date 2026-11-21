@@ -5,7 +5,6 @@ export interface SiteSettings {
   brand: string;
   tagline: string;
   whatsapp: string; // link wa.me/...
-  support_url: string; // tujuan menu Support
   drive_folder: string; // opsional: folder Google Drive di halaman Download
   stats: { value: string; label: string }[];
   promo: { enabled: boolean; badge: string; title: string; desc: string; message: string };
@@ -15,7 +14,6 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   brand: "Mun's Project",
   tagline: 'Web & Application Development',
   whatsapp: 'https://wa.me/6282255679676',
-  support_url: 'https://rekeningku.munajat.my.id',
   drive_folder: '',
   stats: [
     { value: '5+', label: 'Tahun pengalaman' },
@@ -45,7 +43,6 @@ export function mergeSettings(raw: unknown): SiteSettings {
     brand: str(r.brand, DEFAULT_SETTINGS.brand),
     tagline: str(r.tagline, DEFAULT_SETTINGS.tagline),
     whatsapp: str(r.whatsapp, DEFAULT_SETTINGS.whatsapp),
-    support_url: str(r.support_url, DEFAULT_SETTINGS.support_url),
     drive_folder: typeof r.drive_folder === 'string' ? r.drive_folder.trim() : '',
     stats: stats.length ? stats : DEFAULT_SETTINGS.stats,
     promo: {

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Download, ExternalLink, FolderKanban, LayoutDashboard, LogOut, Mail, Settings, ShieldAlert, FileText } from 'lucide-react';
+import { BarChart3, Download, ExternalLink, FolderKanban, Heart, LayoutDashboard, LogOut, Mail, Settings, ShieldAlert, FileText, Users, Eye } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import { useAdmin } from './_components/useAdmin';
 import { PageTitle } from './_components/ui';
@@ -10,18 +10,25 @@ import FilesManager from './_components/FilesManager';
 import ProjectsManager from './_components/ProjectsManager';
 import MessagesManager from './_components/MessagesManager';
 import SettingsManager from './_components/SettingsManager';
+import StatsManager from './_components/StatsManager';
+import PaymentsManager from './_components/PaymentsManager';
+import { fetchVisitStats, nf } from './_components/stats';
+import type { VisitStats } from '@/types';
 
-type Tab = 'dashboard' | 'files' | 'projects' | 'messages' | 'settings';
+type Tab = 'dashboard' | 'stats' | 'files' | 'projects' | 'messages' | 'payments' | 'settings';
 const TABS: { id: Tab; label: string; icon: typeof Settings }[] = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { id: 'stats', label: 'Statistik', icon: BarChart3 },
   { id: 'files', label: 'File Download', icon: FileText },
   { id: 'projects', label: 'Proyek', icon: FolderKanban },
   { id: 'messages', label: 'Pesan', icon: Mail },
+  { id: 'payments', label: 'Rekening', icon: Heart },
   { id: 'settings', label: 'Pengaturan', icon: Settings },
 ];
 
 function Dashboard({ go }: { go: (t: Tab) => void }) {
   const [stats, setStats] = useState<{ files: number; downloads: number; projects: number; unread: number } | null>(null);
+  const [visits, setVisits] = useState<VisitStats | null | 'na'>(null);
 
   useEffect(() => {
     (async () => {
@@ -33,9 +40,15 @@ function Dashboard({ go }: { go: (t: Tab) => void }) {
       const rows = (f.data ?? []) as { download_count: number }[];
       setStats({ files: rows.length, downloads: rows.reduce((a, r) => a + (r.download_count || 0), 0), projects: p.count ?? 0, unread: m.count ?? 0 });
     })();
+    fetchVisitStats(7).then(setVisits).catch(() => setVisits('na'));
   }, []);
 
+  const v = visits && visits !== 'na' ? visits : null;
+  const vv = (n?: number) => (visits === 'na' ? '–' : v ? nf(n) : '…');
+
   const cards: { label: string; value: number | string; tab: Tab; icon: typeof Settings }[] = [
+    { label: 'Pengunjung hari ini', value: vv(v?.today.visitors), tab: 'stats', icon: Users },
+    { label: 'Pengunjung 7 hari', value: vv(v?.last7.visitors), tab: 'stats', icon: Eye },
     { label: 'File tersedia', value: stats?.files ?? '…', tab: 'files', icon: FileText },
     { label: 'Total unduhan', value: stats?.downloads ?? '…', tab: 'files', icon: Download },
     { label: 'Proyek', value: stats?.projects ?? '…', tab: 'projects', icon: FolderKanban },
@@ -45,7 +58,7 @@ function Dashboard({ go }: { go: (t: Tab) => void }) {
   return (
     <div className="space-y-6">
       <PageTitle title="Dashboard" desc="Ringkasan situs. Pilih menu di samping untuk mengelola konten dan pengaturan." />
-      <div className="grid grid-cols-2 gap-3 md:gap-4 xl:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 md:gap-4 xl:grid-cols-3">
         {cards.map((c) => (
           <button key={c.label} type="button" onClick={() => go(c.tab)} className="group card card-hover p-4 text-left md:p-5">
             <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-crimson/10 ring-1 ring-crimson/25"><c.icon size={18} className="text-crimson" strokeWidth={1.75} /></span>
@@ -128,7 +141,9 @@ export default function AdminPage() {
         {tab === 'dashboard' && <Dashboard go={go} />}
         {tab === 'files' && <FilesManager />}
         {tab === 'projects' && <ProjectsManager />}
+        {tab === 'stats' && <StatsManager />}
         {tab === 'messages' && <MessagesManager />}
+        {tab === 'payments' && <PaymentsManager />}
         {tab === 'settings' && <SettingsManager />}
       </main>
     </div>

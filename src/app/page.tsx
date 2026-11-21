@@ -2,9 +2,9 @@
 
 import { useState, useEffect, useRef, createContext, useContext } from 'react';
 import { motion, AnimatePresence, useReducedMotion, useMotionValue, useSpring, useTransform, useInView, MotionValue } from 'framer-motion';
-import { Gift, ArrowRight, ArrowUpRight, Sun, Moon, Code2, Send, CheckCircle2, AlertCircle, GraduationCap, ShoppingCart, Wallet, Users, Landmark, Globe, Smartphone, GitBranch, Database, Server, Terminal, Cpu, SlidersHorizontal, Trophy, Zap, ShieldCheck, Headset, Download, FileText, Heart, FolderOpen } from 'lucide-react';
+import { Gift, ArrowRight, ArrowUpRight, Sun, Moon, Code2, Send, CheckCircle2, AlertCircle, GraduationCap, ShoppingCart, Wallet, Users, Landmark, Globe, Smartphone, GitBranch, Database, Server, Terminal, Cpu, SlidersHorizontal, Trophy, Zap, ShieldCheck, Headset, Download, FileText, Heart, FolderOpen, Folder, ArrowLeft } from 'lucide-react';
 import { supabase, isSupabaseConfigured } from '@/lib/supabaseClient';
-import { Project, DownloadItem } from '@/types';
+import { Project, DownloadItem, DownloadFolder } from '@/types';
 import { DEFAULT_SETTINGS, mergeSettings, driveDownloadUrl, formatBytes, type SiteSettings } from '@/lib/settings';
 import { MOCK_PROJECTS } from '@/lib/defaults';
 
@@ -572,40 +572,79 @@ function WhyView({ go }: { go: (i: number) => void }) {
 }
 
 /* ---------- Download ---------- */
-function DownloadView({ items, loading }: { items: DownloadItem[]; loading: boolean }) {
-  const site = useSite();
-  const hrefFor = (f: DownloadItem) => {
-    if (!f.storage_path) return driveDownloadUrl(f.file_url);
+const NO_FOLDER = '__none';
+
+function FileCard({ f, i }: { f: DownloadItem; i: number }) {
+  const href = f.storage_path
     // ?download= membuat browser mengunduh file (bukan membukanya) dengan nama aslinya
-    return `${f.file_url}${f.file_url.includes('?') ? '&' : '?'}download=${encodeURIComponent(f.file_name || '')}`;
-  };
-  const count = (f: DownloadItem) => {
+    ? `${f.file_url}${f.file_url.includes('?') ? '&' : '?'}download=${encodeURIComponent(f.file_name || '')}`
+    : driveDownloadUrl(f.file_url);
+  const count = () => {
     try { supabase.rpc('increment_download', { item_id: f.id }).then(() => {}, () => {}); } catch {}
   };
   return (
+    <motion.li initial={{ opacity: 0, y: 22 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 + Math.min(i, 8) * 0.05, duration: 0.5, ease: EASE }}>
+      <a href={href} target="_blank" rel="noreferrer" onClick={count} className="group card card-hover flex h-full items-start gap-4 p-4 md:p-5">
+        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-crimson/10 ring-1 ring-crimson/25"><FileText size={20} className="text-crimson transition-transform duration-300 group-hover:scale-110" strokeWidth={1.75} /></span>
+        <div className="min-w-0 flex-1">
+          <h3 className="break-words text-sm font-semibold text-fg md:text-base">{f.name}</h3>
+          {f.description && <p className="mt-1 text-xs leading-relaxed text-muted md:text-[0.8125rem]">{f.description}</p>}
+          <span className="mt-3 inline-flex items-center gap-1.5 text-xs font-semibold text-crimson"><Download size={14} /> Download{f.file_size ? <span className="font-normal text-muted"> · {formatBytes(f.file_size)}</span> : null}</span>
+        </div>
+      </a>
+    </motion.li>
+  );
+}
+
+function DownloadView({ items, folders, loading }: { items: DownloadItem[]; folders: DownloadFolder[]; loading: boolean }) {
+  const site = useSite();
+  const [open, setOpen] = useState<string | null>(null);
+
+  const groups = folders
+    .map((f) => ({ id: f.id, name: f.name, desc: f.description, files: items.filter((i) => i.folder_id === f.id) }))
+    .filter((g) => g.files.length > 0);
+  const loose = items.filter((i) => !i.folder_id || !folders.some((f) => f.id === i.folder_id));
+  if (loose.length > 0 && groups.length > 0) groups.push({ id: NO_FOLDER, name: 'Lainnya', desc: 'File umum yang tidak termasuk proyek tertentu.', files: loose });
+
+  const current = open ? groups.find((g) => g.id === open) : null;
+  const showFlat = !loading && groups.length === 0 && items.length > 0; // belum ada folder: tampilkan daftar biasa
+
+  return (
     <div className={`${BOX} flex min-h-full flex-col justify-center gap-6 pb-8 ${TOP} lg:gap-8`}>
-      <SectionHead title={<>Pusat <span className="text-crimson">download</span></>} desc="Unduh file yang tersedia di bawah ini." />
+      <SectionHead
+        title={<>Pusat <span className="text-crimson">download</span></>}
+        desc={current ? `File dalam folder ${current.name}.` : groups.length > 0 ? 'Pilih folder proyek untuk melihat file yang tersedia.' : 'Unduh file yang tersedia di bawah ini.'}
+      />
       {loading ? (
         <p className="card p-5 text-sm text-muted">Memuat daftar file...</p>
       ) : items.length === 0 ? (
         <p className="card p-5 text-sm text-muted">Belum ada file yang tersedia.</p>
+      ) : showFlat ? (
+        <ul className="grid gap-3 sm:grid-cols-2 md:gap-4 lg:grid-cols-3">{items.map((f, i) => <FileCard key={f.id} f={f} i={i} />)}</ul>
+      ) : current ? (
+        <div className="space-y-4">
+          <button type="button" onClick={() => setOpen(null)} className="inline-flex items-center gap-1.5 text-sm font-medium text-muted transition-colors hover:text-crimson">
+            <ArrowLeft size={15} /> Semua folder
+          </button>
+          <ul className="grid gap-3 sm:grid-cols-2 md:gap-4 lg:grid-cols-3">{current.files.map((f, i) => <FileCard key={f.id} f={f} i={i} />)}</ul>
+        </div>
       ) : (
         <ul className="grid gap-3 sm:grid-cols-2 md:gap-4 lg:grid-cols-3">
-          {items.map((f, i) => (
-            <motion.li key={f.id} initial={{ opacity: 0, y: 22 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 + Math.min(i, 8) * 0.06, duration: 0.55, ease: EASE }}>
-              <a href={hrefFor(f)} target="_blank" rel="noreferrer" onClick={() => count(f)} className="group card card-hover flex h-full items-start gap-4 p-4 md:p-5">
-                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-crimson/10 ring-1 ring-crimson/25"><FileText size={20} className="text-crimson transition-transform duration-300 group-hover:scale-110" strokeWidth={1.75} /></span>
+          {groups.map((g, i) => (
+            <motion.li key={g.id} initial={{ opacity: 0, y: 22 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 + Math.min(i, 8) * 0.05, duration: 0.5, ease: EASE }}>
+              <button type="button" onClick={() => setOpen(g.id)} className="group card card-hover flex h-full w-full items-start gap-4 p-4 text-left md:p-5">
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-crimson/10 ring-1 ring-crimson/25"><Folder size={20} className="text-crimson transition-transform duration-300 group-hover:scale-110" strokeWidth={1.75} /></span>
                 <div className="min-w-0 flex-1">
-                  <h3 className="text-sm font-semibold text-fg md:text-base">{f.name}</h3>
-                  {f.description && <p className="mt-1 text-xs leading-relaxed text-muted md:text-[0.8125rem]">{f.description}</p>}
-                  <span className="mt-3 inline-flex items-center gap-1.5 text-xs font-semibold text-crimson"><Download size={14} /> Download{f.file_size ? <span className="font-normal text-muted"> · {formatBytes(f.file_size)}</span> : null}</span>
+                  <h3 className="break-words text-sm font-semibold text-fg md:text-base">{g.name}</h3>
+                  {g.desc && <p className="mt-1 text-xs leading-relaxed text-muted md:text-[0.8125rem]">{g.desc}</p>}
+                  <span className="mt-3 inline-flex items-center gap-1.5 text-xs font-semibold text-crimson">{g.files.length} file <ArrowRight size={14} className="transition-transform duration-300 group-hover:translate-x-1" /></span>
                 </div>
-              </a>
+              </button>
             </motion.li>
           ))}
         </ul>
       )}
-      {site.drive_folder && (
+      {site.drive_folder && !current && (
         <div>
           <a href={site.drive_folder} target="_blank" rel="noreferrer" className="btn-ghost gap-2 px-5 py-3 text-sm"><FolderOpen size={16} /> Buka folder Google Drive</a>
         </div>
@@ -684,6 +723,7 @@ export default function Home() {
   };
   const [site, setSite] = useState<SiteSettings>(DEFAULT_SETTINGS);
   const [downloads, setDownloads] = useState<DownloadItem[]>([]);
+  const [folders, setFolders] = useState<DownloadFolder[]>([]);
   const [dlLoading, setDlLoading] = useState(true);
   const [dir, setDir] = useState(1);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -741,12 +781,14 @@ export default function Home() {
     (async () => {
       if (!isSupabaseConfigured) { setDlLoading(false); return; }
       try {
-        const [cfg, dl] = await Promise.all([
+        const [cfg, dl, fl] = await Promise.all([
           supabase.from('site_settings').select('data').eq('id', 1).maybeSingle(),
           supabase.from('downloads').select('*').eq('is_published', true).order('created_at', { ascending: false }),
+          supabase.from('download_folders').select('*').order('name', { ascending: true }),
         ]);
         if (!cfg.error && cfg.data) setSite(mergeSettings(cfg.data.data));
         if (!dl.error && dl.data) setDownloads(dl.data as DownloadItem[]);
+        if (!fl.error && fl.data) setFolders(fl.data as DownloadFolder[]);
       } catch {
         /* pakai pengaturan bawaan */
       } finally {
@@ -807,7 +849,7 @@ export default function Home() {
                 {v.label}
               </button>
             ))}
-            <a href={site.support_url} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-2 text-muted transition-all duration-300 hover:bg-fg/10 hover:text-fg lg:px-4">
+            <a href="/support" className="flex items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-2 text-muted transition-all duration-300 hover:bg-fg/10 hover:text-fg lg:px-4">
               <Heart size={13} className="text-crimson" /> Support
             </a>
           </nav>
@@ -840,7 +882,7 @@ export default function Home() {
                 </li>
               ))}
               <li className="border-b border-fg/10">
-                <motion.a href={site.support_url} target="_blank" rel="noreferrer" onClick={() => setMenuOpen(false)} initial={{ opacity: 0, y: 28 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 + VIEWS.length * 0.07, duration: 0.5, ease: EASE }} className="flex w-full items-center gap-4 py-3.5 text-left">
+                <motion.a href="/support" onClick={() => setMenuOpen(false)} initial={{ opacity: 0, y: 28 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 + VIEWS.length * 0.07, duration: 0.5, ease: EASE }} className="flex w-full items-center gap-4 py-3.5 text-left">
                   <span className="font-display text-3xl uppercase leading-none tracking-wide text-fg/40 transition-colors active:text-fg">Support</span>
                   <ArrowUpRight aria-hidden size={22} className="ml-auto self-center text-crimson" />
                 </motion.a>
@@ -867,7 +909,7 @@ export default function Home() {
             {idx === 1 && <ServicesView go={go} />}
             {idx === V.why && <WhyView go={go} />}
             {idx === V.projects && <ProjectsView projects={projects} loading={loading} />}
-            {idx === V.download && <DownloadView items={downloads} loading={dlLoading} />}
+            {idx === V.download && <DownloadView items={downloads} folders={folders} loading={dlLoading} />}
             {idx === V.contact && <ContactView formData={formData} setFormData={setFormData} formStatus={formStatus} onSubmit={handleSubmit} />}
           </motion.div>
         </AnimatePresence>
