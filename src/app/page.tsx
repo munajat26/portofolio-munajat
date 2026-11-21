@@ -1,31 +1,16 @@
 "use client";
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, createContext, useContext } from 'react';
 import { motion, AnimatePresence, useReducedMotion, useMotionValue, useSpring, useTransform, useInView, MotionValue } from 'framer-motion';
-import { Gift, ArrowRight, ArrowUpRight, Sun, Moon, Code2, Send, CheckCircle2, AlertCircle, GraduationCap, ShoppingCart, Wallet, Users, Landmark, Globe, Smartphone, GitBranch, Database, Server, Terminal, Cpu, SlidersHorizontal, Trophy, Zap, ShieldCheck, Headset } from 'lucide-react';
+import { Gift, ArrowRight, ArrowUpRight, Sun, Moon, Code2, Send, CheckCircle2, AlertCircle, GraduationCap, ShoppingCart, Wallet, Users, Landmark, Globe, Smartphone, GitBranch, Database, Server, Terminal, Cpu, SlidersHorizontal, Trophy, Zap, ShieldCheck, Headset, Download, FileText, Heart, FolderOpen } from 'lucide-react';
 import { supabase, isSupabaseConfigured } from '@/lib/supabaseClient';
-import { Project } from '@/types';
+import { Project, DownloadItem } from '@/types';
+import { DEFAULT_SETTINGS, mergeSettings, driveDownloadUrl, formatBytes, type SiteSettings } from '@/lib/settings';
+import { MOCK_PROJECTS } from '@/lib/defaults';
 
-// ====== UBAH DATA BRAND DI SINI ======
-const SITE = {
-  brand: "Mun's Project",
-  tagline: 'Web & Application Development',
-  whatsapp: 'https://wa.me/6282255679676', // ganti dengan nomor WhatsApp tim (format 62..., tanpa + atau 0 di depan)
-  stats: [
-    { value: '5+', label: 'Tahun pengalaman' },
-    { value: '20+', label: 'Proyek selesai' },
-    { value: '10+', label: 'Klien puas' },
-  ],
-};
-
-const MOCK_PROJECTS: Project[] = [
-  { id: '1', title: 'Sistem Manajemen Sekolah', description: 'Aplikasi web untuk mengelola administrasi dan akademik sekolah secara terpusat.', tags: ['Next.js', 'React.js', 'Google App Script'], demo_url: 'https://app.sdi-imam-syafii-sangatta.sch.id', featured: true, image_url: 'https://qjipahjpognzmvqbicnv.supabase.co/storage/v1/object/public/uploads/hero/img-ab91b1d0-2ae3-4881-a7b4-3f825ab02648.png' },
-  { id: '2', title: 'Website Profil Sekolah', description: 'Website sekolah yang menampilkan profil, galeri, dan kegiatan sekolah.', tags: ['Next.js', 'PostgreSQL', 'Supabase'], demo_url: 'https://sdi-imam-syafii-sangatta.sch.id', featured: true, image_url: 'https://qjipahjpognzmvqbicnv.supabase.co/storage/v1/object/public/uploads/hero/img-e82e1947-4223-4ec2-b153-3818d1536ab2.png' },
-  { id: '3', title: 'Web Biro Jodoh Syariah', description: 'Website peserta dan dashboard admin untuk mengelola pendaftar, taaruf, dan proses lainnya.', tags: ['Next.js', 'Google App Script', 'Google Spreadsheet'], demo_url: 'https://almawaddah.vercel.app', featured: false, image_url: 'https://drive.google.com/file/d/1yPobe0-QMlWwe1OARmdDERL7iILPEFdY/view?usp=sharing' },
-  { id: '4', title: 'Bakkah Mart', description: 'Aplikasi kasir dan transaksi cashless untuk Maahad Bakkah Martapura.', tags: ['Next.js', 'Google App Script', 'Google Spreadsheet'], demo_url: 'https://mart.bakkah.sch.id', featured: false, image_url: 'https://drive.google.com/file/d/1Pjzzl021cau4MO3ek1qB2DJzRgYFxnu-/view?usp=sharing' },
-  { id: '5', title: 'Rumina Store', description: 'Toko online perlengkapan busana akhwat.', tags: ['Next.js', 'React.js', 'Supabase'], demo_url: 'https://rumina-store.vercel.app', featured: false, image_url: 'https://drive.google.com/file/d/1TMZgwPjXxBbE-Oq1U-190UFsfPfjiU2e/view?usp=sharing' },
-  { id: '6', title: 'KPI Pegawai YSM', description: 'Aplikasi penilaian kinerja pegawai berdasarkan Key Performance Indicators (KPI).', tags: ['Next.js', 'Google App Script', 'Google Spreadsheet'], demo_url: 'https://kpi.bakkah.sch.id', featured: false, image_url: 'https://drive.google.com/file/d/1X1tOqFouDKgR8VuB7MH_vasubzSkwjV0/view?usp=sharing' },
-];
+// Pengaturan situs (brand, WhatsApp, link Support, statistik, promo) diatur dari Admin Panel > Pengaturan.
+const SiteCtx = createContext<SiteSettings>(DEFAULT_SETTINGS);
+const useSite = () => useContext(SiteCtx);
 
 const SERVICES = [
   { name: 'Sistem Sekolah', desc: 'Administrasi, akademik, PPDB, hingga website profil sekolah.', icon: GraduationCap },
@@ -62,9 +47,10 @@ const VIEWS = [
   { id: 'services', label: 'Layanan' },
   { id: 'why', label: 'Kenapa Kami' },
   { id: 'projects', label: 'Karya' },
+  { id: 'download', label: 'Download' },
   { id: 'contact', label: 'Kontak' },
 ];
-const V = { about: 0, services: 1, why: 2, projects: 3, contact: 4 } as const;
+const V = { about: 0, services: 1, why: 2, projects: 3, download: 4, contact: 5 } as const;
 const EASE = [0.22, 1, 0.36, 1] as const;
 const TOP = 'pt-[calc(5.5rem+env(safe-area-inset-top))]';
 const BOX = 'mx-auto w-full max-w-[90rem] px-5 sm:px-8 lg:px-12';
@@ -347,6 +333,7 @@ function HeroVisual({ x, reduce }: { x: MotionValue<number>; reduce: boolean | n
 }
 
 function PromoBanner({ onClaim, reduce }: { onClaim: () => void; reduce: boolean | null }) {
+  const { promo } = useSite();
   return (
     <motion.button type="button" onClick={onClaim} initial={reduce ? false : { opacity: 0, y: -14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.05, ease: EASE }} className="group relative flex w-full items-center gap-3.5 overflow-hidden rounded-2xl border border-crimson/30 bg-gradient-to-r from-crimson/15 via-crimson/[0.06] to-transparent p-3 pr-4 text-left shadow-sm transition-all duration-300 hover:border-crimson/60 lg:col-span-12 lg:w-fit lg:pr-7">
       <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-crimson text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.3),0_8px_20px_-8px_rgb(var(--crimson)/0.7)] md:h-12 md:w-12">
@@ -354,10 +341,10 @@ function PromoBanner({ onClaim, reduce }: { onClaim: () => void; reduce: boolean
       </span>
       <span className="min-w-0 flex-1">
         <span className="flex items-center gap-2 text-[0.6875rem] font-bold uppercase tracking-[0.16em] text-crimson">
-          Promo <span className="rounded-full bg-crimson px-2 py-0.5 text-[0.625rem] tracking-wider text-white">7 hari</span>
+          Promo <span className="rounded-full bg-crimson px-2 py-0.5 text-[0.625rem] tracking-wider text-white">{promo.badge}</span>
         </span>
-        <span className="mt-0.5 block text-sm font-semibold text-fg md:text-base">Free trial website selama 7 hari</span>
-        <span className="block text-xs text-muted">Plus konsultasi gratis. Coba dulu, puas baru lanjut.</span>
+        <span className="mt-0.5 block text-sm font-semibold text-fg md:text-base">{promo.title}</span>
+        <span className="block text-xs text-muted">{promo.desc}</span>
       </span>
       <ArrowRight size={18} className="shrink-0 text-crimson transition-transform duration-300 group-hover:translate-x-1" />
     </motion.button>
@@ -365,6 +352,7 @@ function PromoBanner({ onClaim, reduce }: { onClaim: () => void; reduce: boolean
 }
 
 function Hero({ go, onPromo }: { go: (i: number) => void; onPromo: () => void }) {
+  const site = useSite();
   const reduce = useReducedMotion();
   const mx = useMotionValue(0);
   const sx = useSpring(mx, { stiffness: 60, damping: 20 });
@@ -382,12 +370,12 @@ function Hero({ go, onPromo }: { go: (i: number) => void; onPromo: () => void })
   return (
     <section onMouseMove={onMove} className="relative isolate h-full overflow-hidden">
       <div className={`${BOX} relative z-10 flex h-full flex-col justify-start gap-5 pb-6 ${TOP} lg:grid lg:grid-cols-12 lg:items-center lg:gap-x-10 lg:gap-y-8 lg:pb-10`}>
-        <PromoBanner onClaim={onPromo} reduce={reduce} />
+        {site.promo.enabled && <PromoBanner onClaim={onPromo} reduce={reduce} />}
         <MobileVisual reduce={reduce} />
 
         <div className="lg:col-span-6">
           <motion.p {...rise(0.05)} className="inline-flex items-center gap-2 rounded-full border border-fg/15 bg-card px-3.5 py-1.5 text-[0.6875rem] font-semibold uppercase tracking-[0.16em] text-muted shadow-sm">
-            <span className="h-1.5 w-1.5 rounded-full bg-crimson" /> {SITE.tagline}
+            <span className="h-1.5 w-1.5 rounded-full bg-crimson" /> {site.tagline}
           </motion.p>
           <motion.h1 {...rise(0.15)} className="mt-5 font-display text-4xl uppercase leading-[1.02] tracking-wide text-fg sm:text-6xl xl:text-7xl">
             Kami bangun <span className="text-crimson">website &amp; aplikasi</span> sesuai kebutuhan Anda
@@ -403,7 +391,7 @@ function Hero({ go, onPromo }: { go: (i: number) => void; onPromo: () => void })
           </motion.div>
           <motion.p {...rise(0.52)} className="mt-3 flex items-center gap-1.5 text-xs text-muted"><CheckCircle2 size={14} className="text-emerald-500" /> Konsultasi gratis, tanpa biaya. Ceritakan kebutuhan Anda.</motion.p>
           <motion.dl {...rise(0.6)} className="mt-7 flex items-center gap-6 border-t border-fg/10 pt-5 sm:gap-8">
-            {SITE.stats.map((s, i) => (
+            {site.stats.map((s, i) => (
               <div key={s.label} className={i > 0 ? 'border-l border-fg/15 pl-6 sm:pl-8' : ''}>
                 <dd className="font-display text-3xl text-crimson md:text-4xl"><CountUp value={s.value} /></dd>
                 <dt className="text-[0.625rem] uppercase tracking-[0.12em] text-muted sm:text-[0.6875rem]">{s.label}</dt>
@@ -583,6 +571,49 @@ function WhyView({ go }: { go: (i: number) => void }) {
   );
 }
 
+/* ---------- Download ---------- */
+function DownloadView({ items, loading }: { items: DownloadItem[]; loading: boolean }) {
+  const site = useSite();
+  const hrefFor = (f: DownloadItem) => {
+    if (!f.storage_path) return driveDownloadUrl(f.file_url);
+    // ?download= membuat browser mengunduh file (bukan membukanya) dengan nama aslinya
+    return `${f.file_url}${f.file_url.includes('?') ? '&' : '?'}download=${encodeURIComponent(f.file_name || '')}`;
+  };
+  const count = (f: DownloadItem) => {
+    try { supabase.rpc('increment_download', { item_id: f.id }).then(() => {}, () => {}); } catch {}
+  };
+  return (
+    <div className={`${BOX} flex min-h-full flex-col justify-center gap-6 pb-8 ${TOP} lg:gap-8`}>
+      <SectionHead title={<>Pusat <span className="text-crimson">download</span></>} desc="Unduh file yang tersedia di bawah ini." />
+      {loading ? (
+        <p className="card p-5 text-sm text-muted">Memuat daftar file...</p>
+      ) : items.length === 0 ? (
+        <p className="card p-5 text-sm text-muted">Belum ada file yang tersedia.</p>
+      ) : (
+        <ul className="grid gap-3 sm:grid-cols-2 md:gap-4 lg:grid-cols-3">
+          {items.map((f, i) => (
+            <motion.li key={f.id} initial={{ opacity: 0, y: 22 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 + Math.min(i, 8) * 0.06, duration: 0.55, ease: EASE }}>
+              <a href={hrefFor(f)} target="_blank" rel="noreferrer" onClick={() => count(f)} className="group card card-hover flex h-full items-start gap-4 p-4 md:p-5">
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-crimson/10 ring-1 ring-crimson/25"><FileText size={20} className="text-crimson transition-transform duration-300 group-hover:scale-110" strokeWidth={1.75} /></span>
+                <div className="min-w-0 flex-1">
+                  <h3 className="text-sm font-semibold text-fg md:text-base">{f.name}</h3>
+                  {f.description && <p className="mt-1 text-xs leading-relaxed text-muted md:text-[0.8125rem]">{f.description}</p>}
+                  <span className="mt-3 inline-flex items-center gap-1.5 text-xs font-semibold text-crimson"><Download size={14} /> Download{f.file_size ? <span className="font-normal text-muted"> · {formatBytes(f.file_size)}</span> : null}</span>
+                </div>
+              </a>
+            </motion.li>
+          ))}
+        </ul>
+      )}
+      {site.drive_folder && (
+        <div>
+          <a href={site.drive_folder} target="_blank" rel="noreferrer" className="btn-ghost gap-2 px-5 py-3 text-sm"><FolderOpen size={16} /> Buka folder Google Drive</a>
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ---------- Kontak ---------- */
 type FormState = { type: 'idle' | 'loading' | 'success' | 'error'; text?: string };
 
@@ -592,12 +623,13 @@ function ContactView({ formData, setFormData, formStatus, onSubmit }: {
   formStatus: FormState;
   onSubmit: (e: React.FormEvent) => void;
 }) {
+  const site = useSite();
   return (
     <div className={`${BOX} grid h-full content-center gap-5 pb-4 ${TOP} md:grid-cols-12 md:items-center md:gap-12`}>
       <div className="md:col-span-5">
         <SectionHead title={<>Mari bekerja <span className="text-crimson">bersama</span></>} desc="Ceritakan kebutuhan website atau sistem Anda. Pesan akan tersimpan langsung ke database dan tim kami akan membalasnya lewat email atau WhatsApp." />
         <p className="mt-4 inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3.5 py-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-300"><CheckCircle2 size={14} /> Konsultasi gratis, tanpa biaya</p>
-        <a href={SITE.whatsapp} target="_blank" rel="noreferrer" className="btn-ghost mt-4 gap-2 px-5 py-3 text-sm md:mt-5"><WhatsappIcon size={18} /> Chat via WhatsApp</a>
+        <a href={site.whatsapp} target="_blank" rel="noreferrer" className="btn-ghost mt-4 gap-2 px-5 py-3 text-sm md:mt-5"><WhatsappIcon size={18} /> Chat via WhatsApp</a>
       </div>
 
       <form onSubmit={onSubmit} className="card space-y-3 p-5 md:col-span-7 md:space-y-4 md:p-8">
@@ -650,6 +682,9 @@ export default function Home() {
     setTheme(next);
     setTimeout(() => root.classList.remove('theme-anim'), 500);
   };
+  const [site, setSite] = useState<SiteSettings>(DEFAULT_SETTINGS);
+  const [downloads, setDownloads] = useState<DownloadItem[]>([]);
+  const [dlLoading, setDlLoading] = useState(true);
   const [dir, setDir] = useState(1);
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
@@ -666,7 +701,7 @@ export default function Home() {
   };
 
   const claimPromo = () => {
-    setFormData((f) => (f.message ? f : { ...f, message: 'Halo, saya tertarik dengan promo free trial website 7 hari.' }));
+    setFormData((f) => (f.message ? f : { ...f, message: site.promo.message }));
     go(V.contact);
   };
 
@@ -702,6 +737,24 @@ export default function Home() {
     })();
   }, []);
 
+  useEffect(() => {
+    (async () => {
+      if (!isSupabaseConfigured) { setDlLoading(false); return; }
+      try {
+        const [cfg, dl] = await Promise.all([
+          supabase.from('site_settings').select('data').eq('id', 1).maybeSingle(),
+          supabase.from('downloads').select('*').eq('is_published', true).order('created_at', { ascending: false }),
+        ]);
+        if (!cfg.error && cfg.data) setSite(mergeSettings(cfg.data.data));
+        if (!dl.error && dl.data) setDownloads(dl.data as DownloadItem[]);
+      } catch {
+        /* pakai pengaturan bawaan */
+      } finally {
+        setDlLoading(false);
+      }
+    })();
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormStatus({ type: 'loading' });
@@ -727,6 +780,7 @@ export default function Home() {
   };
 
   return (
+    <SiteCtx.Provider value={site}>
     <div className="relative h-dvh overflow-hidden bg-ink">
       <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-[32rem] bg-[radial-gradient(50%_70%_at_15%_0%,var(--glow1),transparent_70%),radial-gradient(40%_60%_at_88%_0%,var(--glow2),transparent_70%)]" />
       <div aria-hidden className="bg-dots pointer-events-none absolute inset-x-0 top-0 h-[32rem]" />
@@ -743,7 +797,7 @@ export default function Home() {
               </svg>
             </span>
             <span className="hidden whitespace-nowrap sm:block">
-              <p className="text-fg">{SITE.brand}</p>
+              <p className="text-fg">{site.brand}</p>
               <p className="text-muted">Web &amp; App Studio</p>
             </span>
           </button>
@@ -753,6 +807,9 @@ export default function Home() {
                 {v.label}
               </button>
             ))}
+            <a href={site.support_url} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-2 text-muted transition-all duration-300 hover:bg-fg/10 hover:text-fg lg:px-4">
+              <Heart size={13} className="text-crimson" /> Support
+            </a>
           </nav>
           <div className="flex items-center gap-2 md:gap-4">
           <button type="button" onClick={() => go(V.contact)} className="hidden items-center gap-2.5 whitespace-nowrap rounded-full border border-fg/15 bg-card px-4 py-2.5 text-fg shadow-sm transition-colors hover:border-crimson lg:flex">
@@ -782,14 +839,20 @@ export default function Home() {
                   </motion.button>
                 </li>
               ))}
+              <li className="border-b border-fg/10">
+                <motion.a href={site.support_url} target="_blank" rel="noreferrer" onClick={() => setMenuOpen(false)} initial={{ opacity: 0, y: 28 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 + VIEWS.length * 0.07, duration: 0.5, ease: EASE }} className="flex w-full items-center gap-4 py-3.5 text-left">
+                  <span className="font-display text-3xl uppercase leading-none tracking-wide text-fg/40 transition-colors active:text-fg">Support</span>
+                  <ArrowUpRight aria-hidden size={22} className="ml-auto self-center text-crimson" />
+                </motion.a>
+              </li>
             </ul>
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5, duration: 0.5, ease: EASE }} className="relative">
               <button type="button" onClick={() => go(V.contact)} className="flex items-center gap-2 text-[0.6875rem] font-medium uppercase tracking-[0.18em] text-fg">
                 Terima proyek baru <span className="h-1.5 w-1.5 rounded-full bg-crimson" />
               </button>
               <div className="mt-5 flex items-center gap-2">
-                <a href={SITE.whatsapp} target="_blank" rel="noreferrer" aria-label="WhatsApp" className="flex h-11 w-11 items-center justify-center rounded-full border border-fg/15 transition-colors hover:border-crimson hover:text-crimson"><WhatsappIcon size={18} /></a>
-                <span className="ml-auto text-xs text-muted">© {new Date().getFullYear()} {SITE.brand}</span>
+                <a href={site.whatsapp} target="_blank" rel="noreferrer" aria-label="WhatsApp" className="flex h-11 w-11 items-center justify-center rounded-full border border-fg/15 transition-colors hover:border-crimson hover:text-crimson"><WhatsappIcon size={18} /></a>
+                <span className="ml-auto text-xs text-muted">© {new Date().getFullYear()} {site.brand}</span>
               </div>
             </motion.div>
           </motion.div>
@@ -804,10 +867,12 @@ export default function Home() {
             {idx === 1 && <ServicesView go={go} />}
             {idx === V.why && <WhyView go={go} />}
             {idx === V.projects && <ProjectsView projects={projects} loading={loading} />}
+            {idx === V.download && <DownloadView items={downloads} loading={dlLoading} />}
             {idx === V.contact && <ContactView formData={formData} setFormData={setFormData} formStatus={formStatus} onSubmit={handleSubmit} />}
           </motion.div>
         </AnimatePresence>
       </main>
     </div>
+    </SiteCtx.Provider>
   );
 }

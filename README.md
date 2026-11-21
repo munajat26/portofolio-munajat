@@ -23,10 +23,34 @@ Website promo **Mun's Project**: tim yang mengerjakan website dan aplikasi untuk
    ```
 8. Buka [http://localhost:3000](http://localhost:3000) di browser Anda.
 
+## 🔐 Admin Panel
+
+Panel admin ada di **`/admin`** (login di `/admin/login`). Dari sini Anda mengelola:
+
+- **File Download**: upload file (maks 50 MB) atau tempel link Google Drive. File tampil di menu *Download* pada situs.
+- **Proyek**: tambah/ubah/hapus karya, termasuk upload thumbnail.
+- **Pesan**: baca, balas, dan hapus pesan dari formulir kontak.
+- **Pengaturan**: nama brand, tagline, WhatsApp, link menu *Support*, folder Google Drive, statistik beranda, banner promo, dan ganti password admin.
+
+### Menyiapkan admin (sekali saja)
+
+1. Jalankan seluruh isi `schema.sql` di **Supabase > SQL Editor** (aman dijalankan ulang).
+2. Buat akun: **Authentication > Users > Add user** (isi email + password, centang *Auto Confirm User*).
+3. Daftarkan akun itu sebagai admin dengan menjalankan SQL ini (ganti emailnya):
+   ```sql
+   insert into public.admins (user_id)
+   select id from auth.users where email = 'EMAIL_ADMIN_ANDA'
+   on conflict do nothing;
+   ```
+4. Disarankan: **Authentication > Sign In / Providers**, matikan *Allow new users to sign up*.
+5. Buka `/admin/login` dan masuk.
+
+Keamanan ditegakkan di database (Row Level Security): hanya akun yang ada di tabel `admins` yang bisa mengubah data atau mengupload file. Pengunjung hanya bisa membaca konten yang dipublikasikan dan mengirim pesan.
+
 ## 🖼️ Aset
 
 - Thumbnail proyek: simpan di `public/projects/`, lalu isi kolom `image_url` di tabel `projects` dengan `/projects/nama-file.png` (atau link gambar dari internet).
-- Edit nama brand, statistik, dan nomor WhatsApp di objek `SITE` pada `src/app/page.tsx`.
+- Nama brand, statistik, nomor WhatsApp, dan link Support kini diatur dari **Admin Panel > Pengaturan** (nilai bawaan ada di `src/lib/settings.ts`).
 - Edit daftar layanan di konstanta `SERVICES`, dan alur kerja di `PROCESS`.
 
 ## 🔐 Environment Variable
