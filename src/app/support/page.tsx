@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { ArrowLeft, Check, Copy, Download, Landmark, Moon, QrCode, ShieldCheck, Smartphone, Sun, Wallet, X } from 'lucide-react';
 import { supabase, isSupabaseConfigured } from '@/lib/supabaseClient';
 import { DEFAULT_SETTINGS, mergeSettings, type SiteSettings } from '@/lib/settings';
-import { DEFAULT_PAYMENTS, KIND_LABEL, copyValue, groupNumber } from '@/lib/payments';
+import { DEFAULT_PAYMENTS, KIND_LABEL, copyValue, groupNumber, logoFor } from '@/lib/payments';
 import type { PaymentAccount, PaymentKind } from '@/types';
 
 type Filter = 'all' | PaymentKind;
@@ -204,11 +204,19 @@ export default function SupportPage() {
               const Icon = KIND_ICON[p.kind] ?? Wallet;
               const isQris = p.kind === 'qris';
               const done = copied === p.id;
+              const logo = logoFor(p);
               return (
                 <li key={p.id} className="card card-hover flex flex-col gap-4 p-5">
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex min-w-0 items-center gap-3">
-                      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-crimson/10 ring-1 ring-crimson/25"><Icon size={19} className="text-crimson" strokeWidth={1.75} /></span>
+                      {logo ? (
+                        <span className="flex h-12 min-w-12 shrink-0 items-center justify-center rounded-xl bg-white px-2 py-1.5 shadow-sm ring-1 ring-fg/10">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={logo} alt={p.name} loading="lazy" className="h-full w-auto max-w-[5.5rem] object-contain" />
+                        </span>
+                      ) : (
+                        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-crimson/10 ring-1 ring-crimson/25"><Icon size={19} className="text-crimson" strokeWidth={1.75} /></span>
+                      )}
                       <p className="truncate font-display text-xl uppercase tracking-wide text-fg">{p.name}</p>
                     </div>
                     {p.label && <span className="shrink-0 rounded-full bg-fg/10 px-2.5 py-1 text-[10px] font-medium uppercase tracking-wider text-muted">{p.label}</span>}

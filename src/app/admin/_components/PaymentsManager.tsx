@@ -3,12 +3,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { EyeOff, Loader2, Pencil, Plus, Trash2, Upload, X } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
-import { KIND_LABEL, groupNumber } from '@/lib/payments';
+import { KIND_LABEL, groupNumber, logoFor } from '@/lib/payments';
 import type { PaymentAccount, PaymentKind } from '@/types';
 import { Empty, Field, NoticeBar, PageTitle, errMsg, inputCls, safeFileName, useNotice } from './ui';
 
 const BUCKET = 'site-assets';
-const EMPTY = { kind: 'bank' as PaymentKind, name: '', label: '', account_number: '', holder: '', image_url: '', sort_order: 0, is_published: true };
+const EMPTY = { kind: 'bank' as PaymentKind, name: '', label: '', account_number: '', holder: '', image_url: '', logo_url: '', sort_order: 0, is_published: true };
 
 export default function PaymentsManager() {
   const [items, setItems] = useState<PaymentAccount[]>([]);
@@ -20,6 +20,7 @@ export default function PaymentsManager() {
   const [uploading, setUploading] = useState(false);
   const [notice, setNotice] = useNotice();
   const imgRef = useRef<HTMLInputElement>(null);
+  const logoRef = useRef<HTMLInputElement>(null);
 
   const load = useCallback(async () => {
     const { data, error } = await supabase.from('payment_accounts').select('*').order('sort_order', { ascending: true }).order('created_at', { ascending: true });
@@ -32,15 +33,15 @@ export default function PaymentsManager() {
 
   useEffect(() => { load(); }, [load]);
 
-  const reset = () => { setForm({ ...EMPTY, sort_order: items.length + 1 }); setEditing(null); if (imgRef.current) imgRef.current.value = ''; };
+  const reset = () => { setForm({ ...EMPTY, sort_order: items.length + 1 }); setEditing(null); if (imgRef.current) imgRef.current.value = ''; if (logoRef.current) logoRef.current.value = ''; };
 
   const startEdit = (p: PaymentAccount) => {
     setEditing(p);
-    setForm({ kind: p.kind, name: p.name, label: p.label ?? '', account_number: p.account_number, holder: p.holder ?? '', image_url: p.image_url ?? '', sort_order: p.sort_order, is_published: p.is_published });
+    setForm({ kind: p.kind, name: p.name, label: p.label ?? '', account_number: p.account_number, holder: p.holder ?? '', image_url: p.image_url ?? '', logo_url: p.logo_url ?? '', sort_order: p.sort_order, is_published: p.is_published });
     window.scrollTo?.({ top: 0 });
   };
 
-  const uploadImage = async (f: File | null) => {
+  const uploadImage = async (f: File | null, field: 'image_url' | 'logo_url' = 'image_url') => {
     if (!f) return;
     if (f.size > 5 * 1024 * 1024) { setNotice({ type: 'error', text: 'Ukuran gambar maksimal 5 MB.' }); return; }
     setUploading(true);
@@ -49,7 +50,7 @@ export default function PaymentsManager() {
       const up = await supabase.storage.from(BUCKET).upload(path, f, { cacheControl: '3600', upsert: false, contentType: f.type || undefined });
       if (up.error) throw up.error;
       const { data } = supabase.storage.from(BUCKET).getPublicUrl(path);
-      setForm((s) => ({ ...s, image_url: data.publicUrl }));
+      setForm((s) => ({ ...s, [field]: data.publicUrl }));
       setNotice({ type: 'success', text: 'Gambar diupload. Klik simpan untuk menerapkan.' });
     } catch (err) {
       setNotice({ type: 'error', text: errMsg(err) });
@@ -68,6 +69,7 @@ export default function PaymentsManager() {
       account_number: form.account_number.replace(/\s+/g, ''),
       holder: form.holder.trim() || null,
       image_url: form.kind === 'qris' ? form.image_url.trim() || null : null,
+      logo_url: form.logo_url.trim() || null,
       sort_order: Number.isFinite(form.sort_order) ? form.sort_order : 0,
       is_published: form.is_published,
     };
@@ -114,6 +116,15 @@ export default function PaymentsManager() {
               <Field label={form.kind === 'qris' ? 'NMID / kode transaksi' : 'Nomor rekening / HP'} hint="Spasi otomatis dihapus saat disimpan; tampilan dirapikan per 4 digit."><input required value={form.account_number} onChange={(e) => setForm({ ...form, account_number: e.target.value })} className={inputCls} inputMode={form.kind === 'qris' ? 'text' : 'numeric'} /></Field>
               <Field label="Atas nama"><input value={form.holder} onChange={(e) => setForm({ ...form, holder: e.target.value })} className={inputCls} /></Field>
             </div>
+            <Field label="Logo (opsional)" hint="Logo BSI, GoPay, ShopeePay, dan QRIS sudah terpasang otomatis menurut nama. Isi hanya untuk bank/e-wallet lain atau untuk mengganti logo.">
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <input value={form.logo_url} onChange={(e) => setForm({ ...form, logo_url: e.target.value })} className={inputCls} placeholder="https://... (kosong = logo bawaan)" />
+                <label className="btn-ghost shrink-0 cursor-pointer gap-2 px-4 py-3 text-sm">
+                  {uploading ? <Loader2 size={15} className="animate-spin" /> : <Upload size={15} />} Upload
+                  <input ref={logoRef} type="file" accept="image/*" className="hidden" onChange={(e) => uploadImage(e.target.files?.[0] ?? null, 'logo_url')} />
+                </label>
+              </div>
+            </Field>
             {form.kind === 'qris' && (
               <Field label="Gambar barcode QRIS" hint="Upload gambar QRIS (maks 5 MB) atau tempel link gambar. Dipakai untuk tombol Buka dan Unduh.">
                 <div className="flex flex-col gap-2 sm:flex-row">
@@ -142,6 +153,12 @@ export default function PaymentsManager() {
               <ul className="space-y-3">
                 {items.map((p) => (
                   <li key={p.id} className="card flex flex-col gap-3 p-4 sm:flex-row sm:items-center">
+                    {logoFor(p) && (
+                      <span className="flex h-11 min-w-11 shrink-0 items-center justify-center rounded-xl bg-white px-1.5 py-1 ring-1 ring-fg/10">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={logoFor(p)!} alt="" className="h-full w-auto max-w-[4.5rem] object-contain" />
+                      </span>
+                    )}
                     <div className="min-w-0 flex-1">
                       <p className="flex flex-wrap items-center gap-2 text-sm font-semibold text-fg">
                         {p.name}

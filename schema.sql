@@ -111,10 +111,13 @@ create table if not exists payment_accounts (
   account_number text not null,
   holder text,
   image_url text,
+  logo_url text,
   sort_order integer not null default 0,
   is_published boolean not null default true,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
+
+alter table payment_accounts add column if not exists logo_url text;
 
 -- ---------- Fungsi statistik pengunjung ----------
 -- Mencatat kunjungan (dipanggil pengunjung tanpa login). Halaman /admin tidak dicatat.

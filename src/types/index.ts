@@ -52,6 +52,7 @@ export interface PaymentAccount {
   account_number: string; // nomor rekening / nomor HP / NMID QRIS
   holder: string | null;
   image_url: string | null; // gambar barcode (khusus QRIS)
+  logo_url?: string | null; // logo bank/e-wallet (kosong = logo bawaan menurut nama, atau ikon umum)
   sort_order: number;
   is_published: boolean;
   created_at: string;
